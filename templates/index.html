@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang='zh'>
+<head>
+    <meta charset='UTF-8'>
+    <title>SmartMedia 文生图</title>
+    <link rel='stylesheet' href='/static/style.css'>
+</head>
+<body>
+<div class='container'><h2>SmartMedia 文生图生成</h2>
+    <textarea id='prompt' placeholder='输入描述文字...'></textarea><br>
+    <button onclick='generate()'>生成图片</button>
+    <div id='status'></div>
+    <div id='result'></div>
+    <h3>历史记录</h3>
+    <div id='history'></div>
+    <a href='/logout'>退出登录</a></div>
+<script>
+    async function generate() {
+        const prompt = document.getElementById('prompt').value;
+        if (!prompt) return alert('请输入描述');
+        document.getElementById('status').innerText = 'AI生成中...';
+        const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await res.json();
+        document.getElementById('status').innerText = '';
+        const url = data.data?.image_url_list?.[0] || '';
+        if (url) {
+            document.getElementById('result').innerHTML = `<img src='${url}' width='256'><br><button onclick="save('${prompt}','${url}')">保存</button>`;
+        } else alert('生成失败');
+    }
+
+    async function save(prompt, url) {
+        const res = await fetch('/api/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt, url})
+        });
+        const data = await res.json();
+        alert(data.message);
+        loadHistory();
+    }
+
+    async function loadHistory() {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        document.getElementById('history').innerHTML = data.map(i => `<div><img src='${i.url}' width='128'><p>${i.prompt}</p><button onclick='del(${i.id})'>删除</button></div>`).join('');
+    }
+
+    async function del(id) {
+        await fetch('/api/delete/' + id, {method: 'DELETE'});
+        loadHistory();
+    }
+
+    loadHistory();
+</script>
+</body>
+</html>
