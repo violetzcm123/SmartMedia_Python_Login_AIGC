@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
 from volcengine.visual.VisualService import VisualService
@@ -52,10 +53,17 @@ def init_db():
     conn.close()
 
 
-def get_keys():
-    with open("volc_config.txt") as f:
-        conf = dict(line.strip().split("=") for line in f.readlines())
-    return conf["AK"], conf["SK"]
+# ====================================================
+# 🔹 从 TXT 文件读取 Ark 配置信息
+# ====================================================
+def get_ark_config():
+    conf = {}
+    with open("volc_config.txt", "r", encoding="utf-8") as f:
+        for line in f:
+            if "=" in line:
+                key, val = line.strip().split("=", 1)
+                conf[key.strip()] = val.strip()
+    return conf
 
 
 @app.route('/')
@@ -112,16 +120,45 @@ def home():
 def generate():
     data = request.json
     prompt = data.get("prompt")
-    ak, sk = get_keys()
-    visual = VisualService()
-    visual.set_ak(ak)
-    visual.set_sk(sk)
-    form = {"req_key": "text2image", "text": prompt, "resolution": "512x512"}
+
+    conf = get_ark_config()
+    api_key = conf.get("ARK_API_KEY")
+    model = conf.get("ARK_MODEL", "doubao-seedream-4-0-250828")
+    size = conf.get("ARK_SIZE", "1024x1024")
+    guidance = float(conf.get("ARK_GUIDANCE", 2.5))
+    seed = int(conf.get("ARK_SEED", 42))
+    watermark = conf.get("ARK_WATERMARK", "True").lower() == "true"
+
+    url = "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "guidance_scale": guidance,
+        "model": model,
+        "prompt": prompt,
+        "response_format": "url",
+        "seed": seed,
+        "size": size,
+        "watermark": watermark
+    }
+
     try:
-        resp = visual.cv_process(form)
-        return jsonify(resp)
+        resp = requests.post(url, headers=headers, json=payload)
+        result = resp.json()
+        print("🔥 Ark 响应：", result)
+
+        if "data" in result and len(result["data"]) > 0:
+            img_url = result["data"][0]["url"]
+            return jsonify({"url": img_url})
+        else:
+            return jsonify({"error": result.get("error", "未知响应")})
     except Exception as e:
+        print("❌ Ark生成失败：", e)
         return jsonify({"error": str(e)}), 500
+
+
 
 
 @app.route('/api/save', methods=['POST'])
