@@ -147,7 +147,7 @@ def generate():
     try:
         resp = requests.post(url, headers=headers, json=payload)
         result = resp.json()
-        print("🔥 Ark 响应：", result)
+        print(" Ark 响应：", result)
 
         if "data" in result and len(result["data"]) > 0:
             img_url = result["data"][0]["url"]
@@ -155,7 +155,7 @@ def generate():
         else:
             return jsonify({"error": result.get("error", "未知响应")})
     except Exception as e:
-        print("❌ Ark生成失败：", e)
+        print(" Ark生成失败：", e)
         return jsonify({"error": str(e)}), 500
 
 
