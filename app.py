@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_cors import CORS
 from volcengine.visual.VisualService import VisualService
 import sqlite3, json
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'smartmedia_secret_key'
@@ -47,7 +48,7 @@ def init_db():
                      created_time
                      TIMESTAMP
                      DEFAULT
-                     CURRENT_TIMESTAMP
+                     (datetime('now', 'localtime'))
                  )''')
     conn.commit()
     conn.close()
@@ -115,6 +116,12 @@ def home():
         return redirect(url_for('index'))
     return render_template('index.html')
 
+@app.route('/history')
+def history_page():
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    return render_template('history.html')
+
 
 @app.route('/api/generate', methods=['POST'])
 def generate():
@@ -147,7 +154,7 @@ def generate():
     try:
         resp = requests.post(url, headers=headers, json=payload)
         result = resp.json()
-        print("🔥 Ark 响应：", result)
+        print(" Ark 响应：", result)
 
         if "data" in result and len(result["data"]) > 0:
             img_url = result["data"][0]["url"]
@@ -155,7 +162,7 @@ def generate():
         else:
             return jsonify({"error": result.get("error", "未知响应")})
     except Exception as e:
-        print("❌ Ark生成失败：", e)
+        print(" Ark生成失败：", e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -166,12 +173,14 @@ def save():
     if 'user_id' not in session:
         return jsonify({"error": "未登录"}), 401
     data = request.json
+    local_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db()
-    conn.execute("INSERT INTO images(user_id, prompt, url) VALUES(?,?,?)",
-                 (session['user_id'], data['prompt'], data['url']))
+    conn.execute("INSERT INTO images(user_id, prompt, url,created_time) VALUES(?,?,?,?)",
+                 (session['user_id'], data['prompt'], data['url'],local_time))
     conn.commit()
     conn.close()
     return jsonify({"message": "保存成功"})
+
 
 
 @app.route('/api/history')

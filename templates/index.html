@@ -17,6 +17,9 @@
     <h2>AI 图像生成 (豆包·幻梦)</h2>
     <input type="text" id="prompt" placeholder="输入提示词，例如：鱼眼镜头，一只猫咪的头部">
     <button id="generate-btn">生成图片</button>
+    <button onclick="history_data()" id="history_data" >历史记录</button>
+    <style>.button-out {position: absolute;right:10px;top:12px;}</style>
+    <button onclick="logout()" class="button-out">退出登录</button>
 
     <div id="result"></div>
 
@@ -33,7 +36,6 @@
             }
 
             resultDiv.innerHTML = `<div class='loading'>正在生成，请稍候...</div>`;
-
             try {
                 const response = await fetch("/api/generate", {
                     method: "POST",
@@ -49,6 +51,25 @@
                         <img src="${data.url}" alt="生成图像">
                         <p><a href="${data.url}" target="_blank">点击查看原图</a></p>
                     `;
+                    fetch("/api/save", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            url: data.url
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+
+                        } else {
+                            alert("保存失败：" + (data.error || "未知错误"));
+                        }
+                    })
+                    .catch(err => {
+                        alert("保存请求错误：" + err.message);
+                    });
                 } else {
                     resultDiv.innerHTML = `<p style='color:red;'>生成失败：${data.error || "未知错误"}</p>`;
                 }
@@ -56,6 +77,17 @@
                 resultDiv.innerHTML = `<p style='color:red;'>请求错误：${err.message}</p>`;
             }
         };
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '/logout';
+            }
+        }
+
+        function history_data() {
+            window.location.href = '/history';
+        }
+
     </script>
 </body>
 </html>
