@@ -2,93 +2,391 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>AI 图像生成</title>
+    <title>SmartMedia - AI 图像工作台</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        body { font-family: "微软雅黑"; text-align: center; background: #f5f5f5; }
-        #prompt { width: 60%; padding: 10px; margin: 20px; }
-        #generate-btn { padding: 10px 20px; cursor: pointer; }
-        #result { margin-top: 30px; }
-        #result img { max-width: 512px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
-        .loading { font-size: 16px; color: #666; margin-top: 20px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2f3, #d9e4f5);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 220px;
+            background: linear-gradient(180deg, #4a6cf7, #8aa5ff);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .menu-item {
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 10px;
+            background: #ff6b6b;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #fa5252;
+        }
+
+        /* 主内容区 */
+        .main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #result img,
+        #result-img img,
+        #result-text img {
+            max-width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            margin-top: 15px;
+        }
+
+
+        input[type="text"], input[type="file"] {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #fa5252;
+        }
+
+        button {
+            background: #4a6cf7;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #3454d1;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .history-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            margin-top: 20px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            text-align: center;
+        }
+
+        .history-item img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* 🔹图生图图片预览 */
+        .preview-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .preview-container img {
+            max-width: 300px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 <body>
-    <h2>AI 图像生成 (豆包·幻梦)</h2>
-    <input type="text" id="prompt" placeholder="输入提示词，例如：鱼眼镜头，一只猫咪的头部">
-    <button id="generate-btn">生成图片</button>
-    <button onclick="history_data()" id="history_data" >历史记录</button>
-    <style>.button-out {position: absolute;right:10px;top:12px;}</style>
-    <button onclick="logout()" class="button-out">退出登录</button>
 
-    <div id="result"></div>
+<div class="sidebar">
+    <h2>SmartMedia</h2>
+    <div class="menu-item active" onclick="showSection('text2img')">🖋 文生图</div>
+    <div class="menu-item" onclick="showSection('img2img')">🧩 图生图</div>
+    <div class="menu-item" onclick="loadHistory(); showSection('history')">🕓 历史记录</div>
+    <div class="menu-item" onclick="showSection('profile')">👤 个人信息</div>
+    <button class="logout-btn" onclick="logout()">退出登录</button>
+</div>
 
-    <script>
-        const btn = document.getElementById("generate-btn");
-        const promptInput = document.getElementById("prompt");
-        const resultDiv = document.getElementById("result");
+<div class="main">
+    <!-- 文生图 -->
+    <div id="text2img" class="section active card">
+        <h2>🖋 文生图 (Text to Image)</h2>
+        <input type="text" id="prompt-text" placeholder="请输入提示词，例如：森林中的独角兽">
+        <button onclick="generateText2Img()">生成图片</button>
+        <div id="result-text"></div>
+    </div>
 
-        btn.onclick = async () => {
-            const prompt = promptInput.value.trim();
-            if (!prompt) {
-                alert("请输入提示词！");
-                return;
-            }
+    <!-- 图生图 -->
+    <div id="img2img" class="section card">
+        <h2>🧩 图生图 (Image to Image)</h2>
+        <input type="text" id="prompt-img" placeholder="请输入提示词，例如：让女孩变为短发">
+        <input type="file" id="image-input" accept="image/*" onchange="previewImage()">
+        <div id="preview" class="preview-container"></div> <!-- 🔹预览容器 -->
+        <button onclick="generateImg2Img()">生成图片</button>
+        <div id="result-img"></div>
+    </div>
 
-            resultDiv.innerHTML = `<div class='loading'>正在生成，请稍候...</div>`;
-            try {
-                const response = await fetch("/api/generate", {
+    <!-- 历史记录 -->
+    <div id="history" class="section card">
+        <h2>🕓 我的生成历史</h2>
+        <input type="text" id="search-input" placeholder="输入关键词搜索">
+        <button onclick="searchHistory()">搜索</button>
+        <div id="history-list" class="history-grid"></div>
+    </div>
+
+    <!-- 个人信息 -->
+    <div id="profile" class="section card">
+        <h2>👤 个人信息</h2>
+        <p>用户名：<strong>{{ session.get('user_id') }}</strong></p>
+        <p>欢迎使用 SmartMedia 创意工作台。</p>
+    </div>
+</div>
+
+<script>
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    /* 🔹图生图预览功能 */
+    function previewImage() {
+        const file = document.getElementById('image-input').files[0];
+        const preview = document.getElementById('preview');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.innerHTML = "";
+        }
+    }
+
+    /* 文生图 */
+    async function generateText2Img() {
+        const prompt = document.getElementById('prompt-text').value.trim();
+        if (!prompt) return alert("请输入提示词！");
+        const result = document.getElementById('result-text');
+        result.innerHTML = "正在生成...";
+
+
+        const res = await fetch("/api/generate", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({prompt})
+        });
+
+        const data = await res.json();
+        if (data.url) {
+            result.innerHTML = `<img src="${data.url}"><p><a href="${data.url}" target="_blank">查看原图</a></p>`;
+            // 生成成功后保存记录
+            await fetch("/api/save", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({prompt, url: data.url, type: "text2img"})
+            });
+        } else {
+            result.innerHTML = `<p style="color:red;">生成失败：${data.error || "未知错误"}</p>`;
+        }
+    }
+
+
+    /* 图生图 */
+    async function generateImg2Img() {
+        const prompt = document.getElementById('prompt-img').value.trim();
+        const file = document.getElementById('image-input').files[0];
+        if (!prompt || !file) return alert("请输入提示词并选择图片！");
+
+        const reader = new FileReader();
+        reader.onload = async e => {
+            const imageBase64 = e.target.result;
+            const result = document.getElementById('result-img');
+            result.innerHTML = "正在生成...";
+
+            const res = await fetch("/api/generate", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({prompt, image: imageBase64})
+            });
+
+            const data = await res.json();
+            if (data.url) {
+                result.innerHTML = `<img src="${data.url}"><p><a href="${data.url}" target="_blank">查看原图</a></p>`;
+                // 生成成功后保存数据库记录
+                await fetch("/api/save", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt })
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        prompt,
+                        url: data.url,
+                        type: "img2img",
+                        source_image: imageBase64
+                    })
                 });
-
-                const data = await response.json();
-
-                if (data.url) {
-                    resultDiv.innerHTML = `
-                        <p>生成成功：</p>
-                        <img src="${data.url}" alt="生成图像">
-                        <p><a href="${data.url}" target="_blank">点击查看原图</a></p>
-                    `;
-                    fetch("/api/save", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            prompt: prompt,
-                            url: data.url
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.message) {
-
-                        } else {
-                            alert("保存失败：" + (data.error || "未知错误"));
-                        }
-                    })
-                    .catch(err => {
-                        alert("保存请求错误：" + err.message);
-                    });
-                } else {
-                    resultDiv.innerHTML = `<p style='color:red;'>生成失败：${data.error || "未知错误"}</p>`;
-                }
-            } catch (err) {
-                resultDiv.innerHTML = `<p style='color:red;'>请求错误：${err.message}</p>`;
+            } else {
+                result.innerHTML = `<p style="color:red;">生成失败：${data.error || "未知错误"}</p>`;
             }
         };
+        reader.readAsDataURL(file);
+    }
 
-        function logout() {
-            if (confirm('确定要退出登录吗？')) {
-                window.location.href = '/logout';
-            }
+
+    /* 历史记录加载 */
+    async function loadHistory() {
+        const res = await fetch('/api/history');
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        const data = await res.json();
+
+        if (data.length === 0) {
+            list.innerHTML = "<p>暂无历史记录</p>";
+        } else {
+            data.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "history-item";
+                div.innerHTML = `
+                    <img src="${r.url}" alt="生成图片">
+                    <p>${r.prompt}</p>
+                    <p style="font-size:12px;color:gray;">
+                        类型：${r.type === 'img2img' ? '图生图 🧩' : '文生图 🖋'}
+                    </p>
+                    ${r.type === 'img2img' && r.source_image
+                    ? `<div style="margin-top:8px;"><p style="font-size:12px;color:#888;">原图预览：</p>
+                           <img src="${r.source_image}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;"></div>`
+                    : ''}
+                    <button class="delete-btn" onclick="deleteHistory(${r.id})">🗑 删除</button>
+                `;
+                list.appendChild(div);
+            });
+
+
         }
+    }
 
-        function history_data() {
-            window.location.href = '/history';
+    /* 历史搜索 */
+    async function searchHistory() {
+        const q = document.getElementById('search-input').value.trim();
+        const res = await fetch(`/api/history?q=${encodeURIComponent(q)}`);
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        const data = await res.json();
+
+        if (data.length === 0) {
+            list.innerHTML = "<p>未找到相关记录</p>";
+        } else {
+            data.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "history-item";
+                div.innerHTML = `
+                    <img src="${r.url}" alt="生成图片">
+                    <p>${r.prompt}</p>
+                    <p style="font-size:12px;color:gray;">
+                        类型：${r.type === 'img2img' ? '图生图 🧩' : '文生图 🖋'}
+                    </p>
+                    ${r.type === 'img2img' && r.source_image
+                    ? `<div style="margin-top:8px;"><p style="font-size:12px;color:#888;">原图预览：</p>
+                           <img src="${r.source_image}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;"></div>`
+                    : ''}
+                    <button class="delete-btn" onclick="deleteHistory(${r.id})">🗑 删除</button>
+                `;
+                list.appendChild(div);
+            });
         }
+    }
 
-    </script>
+    /* 历史记录删除 */
+    async function deleteHistory(id) {
+        if (!confirm("确定要删除这条记录吗？")) return;
+
+        const res = await fetch(`/api/delete/${id}`, {method: "DELETE"});
+        const result = await res.json();
+
+        if (result.message === "删除成功") {
+            alert("已删除");
+            loadHistory(); // 重新加载列表
+        } else {
+            alert("删除失败：" + (result.error || "未知错误"));
+        }
+    }
+
+
+    function logout() {
+        if (confirm("确定要退出登录吗？")) window.location.href = "/logout";
+    }
+</script>
 </body>
 </html>
-

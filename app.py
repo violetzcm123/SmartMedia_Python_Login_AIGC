@@ -1,3 +1,5 @@
+import os
+
 import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
@@ -22,33 +24,33 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS users
                  (
                      id
-                     INTEGER
-                     PRIMARY
-                     KEY
-                     AUTOINCREMENT,
+                         INTEGER
+                         PRIMARY
+                             KEY
+                         AUTOINCREMENT,
                      username
-                     TEXT
-                     UNIQUE,
+                         TEXT
+                         UNIQUE,
                      password
-                     TEXT
+                         TEXT
                  )''')
     c.execute('''CREATE TABLE IF NOT EXISTS images
                  (
                      id
-                     INTEGER
-                     PRIMARY
-                     KEY
-                     AUTOINCREMENT,
+                         INTEGER
+                         PRIMARY
+                             KEY
+                         AUTOINCREMENT,
                      user_id
-                     INTEGER,
+                         INTEGER,
                      prompt
-                     TEXT,
+                         TEXT,
                      url
-                     TEXT,
+                         TEXT,
                      created_time
-                     TIMESTAMP
-                     DEFAULT
-                     (datetime('now', 'localtime'))
+                         TIMESTAMP
+                         DEFAULT
+                             (datetime('now', 'localtime'))
                  )''')
     conn.commit()
     conn.close()
@@ -66,6 +68,10 @@ def get_ark_config():
                 conf[key.strip()] = val.strip()
     return conf
 
+
+# ====================================================
+# 页面路由
+# ====================================================
 
 @app.route('/')
 def index():
@@ -116,6 +122,7 @@ def home():
         return redirect(url_for('index'))
     return render_template('index.html')
 
+
 @app.route('/history')
 def history_page():
     if 'user_id' not in session:
@@ -123,10 +130,14 @@ def history_page():
     return render_template('history.html')
 
 
+# ====================================================
+# 生成图片（支持图生图 + 自动下载保存）
+# ====================================================
 @app.route('/api/generate', methods=['POST'])
 def generate():
     data = request.json
     prompt = data.get("prompt")
+    image_url = data.get("image")  # 图生图时上传的原图URL
 
     conf = get_ark_config()
     api_key = conf.get("ARK_API_KEY")
@@ -148,48 +159,82 @@ def generate():
         "response_format": "url",
         "seed": seed,
         "size": size,
-        "watermark": watermark
+        "watermark": watermark,
+        "image_url": image_url
     }
 
+    print("Ark 请求参数：", json.dumps(payload, ensure_ascii=False, indent=2))
+
+    if image_url:
+        payload["image"] = image_url  # 图生图
     try:
         resp = requests.post(url, headers=headers, json=payload)
         result = resp.json()
-        print(" Ark 响应：", result)
+        print("Ark 响应：", result)
 
         if "data" in result and len(result["data"]) > 0:
-            img_url = result["data"][0]["url"]
-            return jsonify({"url": img_url})
+            ark_url = result["data"][0]["url"]
+
+            # 下载图片到 static/image 文件夹
+            img_data = requests.get(ark_url).content
+            os.makedirs("static/image", exist_ok=True)
+            filename = f"img_{int(datetime.now().timestamp())}.jpg"
+            save_path = os.path.join("static", "image", filename)
+            with open(save_path, "wb") as f:
+                f.write(img_data)
+
+            local_url = f"/static/image/{filename}"
+            return jsonify({"url": local_url})
         else:
             return jsonify({"error": result.get("error", "未知响应")})
     except Exception as e:
-        print(" Ark生成失败：", e)
+        print("Ark生成失败：", e)
         return jsonify({"error": str(e)}), 500
 
 
-
-
+# ====================================================
+# 保存生成记录
+# ====================================================
 @app.route('/api/save', methods=['POST'])
 def save():
     if 'user_id' not in session:
         return jsonify({"error": "未登录"}), 401
     data = request.json
+    prompt = data.get("prompt")
+    url = data.get("url")
+    image_type = data.get("type", "text2img")  # 默认文生图
+    source_image = data.get("source_image")
+
     local_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db()
-    conn.execute("INSERT INTO images(user_id, prompt, url,created_time) VALUES(?,?,?,?)",
-                 (session['user_id'], data['prompt'], data['url'],local_time))
+    conn.execute(
+        "INSERT INTO images(user_id, prompt, url, type, source_image, created_time) VALUES(?,?,?,?,?,?)",
+        (session['user_id'], prompt, url, image_type, source_image, local_time)
+    )
     conn.commit()
     conn.close()
     return jsonify({"message": "保存成功"})
 
 
-
+# ====================================================
+# 查询历史记录（支持关键词搜索）
+# ====================================================
 @app.route('/api/history')
 def history():
     if 'user_id' not in session:
         return jsonify([])
+    keyword = request.args.get('q', '').strip()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM images WHERE user_id=? ORDER BY id DESC",
-                        (session['user_id'],)).fetchall()
+    if keyword:
+        rows = conn.execute(
+            "SELECT * FROM images WHERE user_id=? AND prompt LIKE ? ORDER BY id DESC",
+            (session['user_id'], f"%{keyword}%")
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM images WHERE user_id=? ORDER BY id DESC",
+            (session['user_id'],)
+        ).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -197,6 +242,11 @@ def history():
 @app.route('/api/delete/<int:image_id>', methods=['DELETE'])
 def delete(image_id):
     conn = get_db()
+    row = conn.execute("SELECT url FROM images WHERE id=?", (image_id,)).fetchone()
+    if row and row["url"].startswith("/static/image/"):
+        file_path = row["url"].lstrip("/")
+        if os.path.exists(file_path):
+            os.remove(file_path)
     conn.execute("DELETE FROM images WHERE id=?", (image_id,))
     conn.commit()
     conn.close()
