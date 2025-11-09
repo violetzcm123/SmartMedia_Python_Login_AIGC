@@ -10,36 +10,42 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Microsoft YaHei', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
+
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
+
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
         }
+
         .nav-buttons {
             display: flex;
             gap: 15px;
             justify-content: center;
             margin-top: 20px;
         }
+
         .btn {
             padding: 12px 30px;
             border: none;
@@ -51,31 +57,38 @@
             display: inline-block;
             text-align: center;
         }
+
         .btn-primary {
             background: #ff6b6b;
             color: white;
         }
+
         .btn-secondary {
             background: #51cf66;
             color: white;
         }
+
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
+
         .history-content {
             padding: 30px;
         }
+
         .loading {
             text-align: center;
             padding: 50px;
             font-size: 18px;
             color: #666;
         }
+
         .history-list {
             display: grid;
             gap: 25px;
         }
+
         .history-item {
             border: 1px solid #e9ecef;
             border-radius: 12px;
@@ -83,26 +96,31 @@
             background: #f8f9fa;
             transition: all 0.3s ease;
         }
+
         .history-item:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
+
         .prompt-text {
             font-size: 16px;
             color: #333;
             margin-bottom: 15px;
             line-height: 1.5;
         }
+
         .image-container {
             text-align: center;
             margin: 15px 0;
         }
+
         .history-image {
             max-width: 100%;
             max-height: 400px;
             border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
+
         .meta-info {
             display: flex;
             justify-content: space-between;
@@ -113,6 +131,7 @@
             color: #666;
             font-size: 14px;
         }
+
         .delete-btn {
             background: #ff6b6b;
             color: white;
@@ -123,23 +142,28 @@
             font-size: 12px;
             transition: all 0.3s ease;
         }
+
         .delete-btn:hover {
             background: #fa5252;
             transform: scale(1.05);
         }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #666;
         }
+
         .empty-state h3 {
             font-size: 24px;
             margin-bottom: 15px;
         }
+
         .empty-state p {
             font-size: 16px;
             margin-bottom: 25px;
         }
+
         .time-badge {
             background: #4dabf7;
             color: white;
@@ -150,70 +174,76 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1> 我的生成历史</h1>
-            <p>查看您之前生成的所有AI图片</p>
-            <div class="nav-buttons">
-                <a href="/home" class="btn btn-primary">返回生成</a>
-                <a href="/logout" class="btn btn-secondary" onclick="return confirm('确定要退出登录吗？')">退出登录</a>
-            </div>
-        </div>
-
-        <div class="history-content">
-            <div id="loading" class="loading">
-                 加载历史记录中...
-            </div>
-
-            <div id="history-list" class="history-list" style="display: none;">
-                <!-- 历史记录将在这里动态生成 -->
-            </div>
-
-            <div id="empty-state" class="empty-state" style="display: none;">
-                <h3> 还没有生成记录</h3>
-                <p>快去生成你的第一张AI图片吧！</p>
-                <a href="/home" class="btn btn-primary">开始生成</a>
-            </div>
+<div class="container">
+    <div class="header">
+        <h1> 我的生成历史</h1>
+        <p>查看您之前生成的所有AI图片</p>
+        <div class="nav-buttons">
+            <a href="/home" class="btn btn-primary">返回生成</a>
+            <a href="/logout" class="btn btn-secondary" onclick="return confirm('确定要退出登录吗？')">退出登录</a>
         </div>
     </div>
+    <div style="margin-top:15px;">
+        <input type="text" id="search-input" placeholder="输入关键词搜索"
+               style="padding:8px;width:250px;border-radius:8px;border:1px solid #ccc;">
+        <button class="btn btn-secondary" onclick="searchHistory()">搜索</button>
+        <button class="btn btn-primary" onclick="clearSearch()">清空</button>
+    </div>
 
-    <script>
-        // 页面加载完成后获取历史记录
-        document.addEventListener('DOMContentLoaded', function() {
-            loadHistory();
-        });
+    <div class="history-content">
+        <div id="loading" class="loading">
+            加载历史记录中...
+        </div>
 
-        // 加载历史记录
-        async function loadHistory() {
-            try {
-                const response = await fetch('/api/history');
-                const records = await response.json();
+        <div id="history-list" class="history-list" style="display: none;">
+            <!-- 历史记录将在这里动态生成 -->
+        </div>
 
-                // 隐藏加载提示
-                document.getElementById('loading').style.display = 'none';
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <h3> 还没有生成记录</h3>
+            <p>快去生成你的第一张AI图片吧！</p>
+            <a href="/home" class="btn btn-primary">开始生成</a>
+        </div>
+    </div>
+</div>
 
-                if (records.length === 0) {
-                    // 没有记录
-                    document.getElementById('empty-state').style.display = 'block';
-                } else {
-                    // 显示记录
-                    displayHistory(records);
-                    document.getElementById('history-list').style.display = 'grid';
-                }
-            } catch (error) {
-                document.getElementById('loading').innerHTML =
-                    '<p style="color: red;"> 加载失败：' + error.message + '</p>';
+<script>
+    // 页面加载完成后获取历史记录
+    document.addEventListener('DOMContentLoaded', function () {
+        loadHistory();
+    });
+
+    // 加载历史记录
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history');
+            const records = await response.json();
+
+            // 隐藏加载提示
+            document.getElementById('loading').style.display = 'none';
+
+            if (records.length === 0) {
+                // 没有记录
+                document.getElementById('empty-state').style.display = 'block';
+            } else {
+                // 显示记录
+                displayHistory(records);
+                document.getElementById('history-list').style.display = 'grid';
             }
+        } catch (error) {
+            document.getElementById('loading').innerHTML =
+                '<p style="color: red;"> 加载失败：' + error.message + '</p>';
         }
+    }
 
-        // 显示历史记录
-        function displayHistory(records) {
-            const historyList = document.getElementById('history-list');
+    // 显示历史记录
+    function displayHistory(records) {
+        const historyList = document.getElementById('history-list');
 
-            records.forEach(record => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.innerHTML = `
+        records.forEach(record => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
                     <div class="prompt-text">
                         <strong>提示词：</strong>${escapeHtml(record.prompt)}
                     </div>
@@ -228,46 +258,71 @@
                         </button>
                     </div>
                 `;
-                historyList.appendChild(historyItem);
+            historyList.appendChild(historyItem);
+        });
+    }
+
+    // 删除记录
+    async function deleteRecord(recordId) {
+        if (!confirm('确定要删除这条记录吗？')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/delete/${recordId}`, {
+                method: 'DELETE'
             });
-        }
 
-        // 删除记录
-        async function deleteRecord(recordId) {
-            if (!confirm('确定要删除这条记录吗？')) {
-                return;
+            const result = await response.json();
+
+            if (result.message) {
+                alert('删除成功！');
+                location.reload(); // 重新加载页面
+            } else {
+                alert('删除失败：' + (result.error || '未知错误'));
             }
-
-            try {
-                const response = await fetch(`/api/delete/${recordId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-
-                if (result.message) {
-                    alert('删除成功！');
-                    location.reload(); // 重新加载页面
-                } else {
-                    alert('删除失败：' + (result.error || '未知错误'));
-                }
-            } catch (error) {
-                alert('删除失败：' + error.message);
-            }
+        } catch (error) {
+            alert('删除失败：' + error.message);
         }
+    }
 
-        // 工具函数：转义HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    // 工具函数：转义HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-        // 工具函数：格式化时间
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleString('zh-CN');
+    // 工具函数：格式化时间
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleString('zh-CN');
+    }
+
+    async function searchHistory() {
+        const keyword = document.getElementById('search-input').value.trim();
+        document.getElementById('history-list').innerHTML = '';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('empty-state').style.display = 'none';
+
+        const url = keyword ? `/api/history?q=${encodeURIComponent(keyword)}` : '/api/history';
+        const response = await fetch(url);
+        const records = await response.json();
+
+        document.getElementById('loading').style.display = 'none';
+        if (records.length === 0) {
+            document.getElementById('empty-state').style.display = 'block';
+        } else {
+            displayHistory(records);
+            document.getElementById('history-list').style.display = 'grid';
         }
-    </script>
+    }
+
+    function clearSearch() {
+        document.getElementById('search-input').value = '';
+        loadHistory();
+    }
+
+</script>
 </body>
 </html>
