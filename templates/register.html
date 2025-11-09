@@ -1,18 +1,274 @@
 <!DOCTYPE html>
-<html lang='zh'>
+<html lang="zh-CN">
 <head>
-    <meta charset='UTF-8'>
-    <title>注册 - SmartMedia</title>
-    <link rel='stylesheet' href='/static/style.css'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            border-color: #4a90e2;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .valid {
+            border-color: #2ecc71;
+        }
+
+        .invalid {
+            border-color: #e74c3c;
+        }
+
+        .hint {
+            font-size: 13px;
+            margin-top: 5px;
+            color: #777;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3a7bc8;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .requirements {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .requirements h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .requirements ul {
+            padding-left: 20px;
+            color: #666;
+        }
+
+        .requirements li {
+            margin-bottom: 5px;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-<div class='container'><h2>SmartMedia 注册</h2>
-    <form method='POST' action='/register'>
-        <input name='username' placeholder='用户名' required>
-        <input name='password' type='password' placeholder='密码' required>
-        {% if error %}<p class='error'>{{ error }}</p>{% endif %}
-        <button type='submit'>注册</button>
-        <p>已有账号？<a href='/'>登录</a></p></form>
-</div>
+    <div class="container">
+        <h1>用户注册</h1>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名">
+                <div class="hint">用户名必须为不超过10个数字和字母的组合</div>
+                <div class="error" id="usernameError">用户名不符合要求</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码">
+                <div class="hint">密码必须不少于8位，且包含数字、大写字母和小写字母</div>
+                <div class="error" id="passwordError">密码不符合要求</div>
+            </div>
+
+            <button type="submit" id="submitBtn" disabled>注册</button>
+
+            <div class="success-message" id="successMessage">
+                注册成功！
+            </div>
+        </form>
+
+        <div class="requirements">
+            <h3>注册要求：</h3>
+            <ul>
+                <li>用户名：不超过10个字符，只能包含数字和字母</li>
+                <li>密码：不少于8位，必须包含数字、大写字母和小写字母</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+            const usernameError = document.getElementById('usernameError');
+            const passwordError = document.getElementById('passwordError');
+            const successMessage = document.getElementById('successMessage');
+
+            // 验证用户名
+            function validateUsername(username) {
+                // 不超过10个字符，只能是数字和字母
+                const regex = /^[a-zA-Z0-9]{1,10}$/;
+                return regex.test(username);
+            }
+
+            // 验证密码
+            function validatePassword(password) {
+                // 不少于8位，必须包含数字、大写字母和小写字母
+                const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+                return regex.test(password);
+            }
+
+            // 更新提交按钮状态
+            function updateSubmitButton() {
+                const isUsernameValid = validateUsername(usernameInput.value);
+                const isPasswordValid = validatePassword(passwordInput.value);
+
+                if (isUsernameValid && isPasswordValid) {
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = true;
+                }
+            }
+
+            // 用户名输入事件
+            usernameInput.addEventListener('input', function() {
+                const username = this.value;
+
+                if (username === '') {
+                    this.classList.remove('valid', 'invalid');
+                    usernameError.style.display = 'none';
+                } else if (validateUsername(username)) {
+                    this.classList.remove('invalid');
+                    this.classList.add('valid');
+                    usernameError.style.display = 'none';
+                } else {
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                    usernameError.style.display = 'block';
+                }
+
+                updateSubmitButton();
+            });
+
+            // 密码输入事件
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+
+                if (password === '') {
+                    this.classList.remove('valid', 'invalid');
+                    passwordError.style.display = 'none';
+                } else if (validatePassword(password)) {
+                    this.classList.remove('invalid');
+                    this.classList.add('valid');
+                    passwordError.style.display = 'none';
+                } else {
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                    passwordError.style.display = 'block';
+                }
+
+                updateSubmitButton();
+            });
+
+            // 表单提交事件
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const username = usernameInput.value;
+                const password = passwordInput.value;
+
+                // 在实际应用中，这里应该发送数据到服务器
+                // 这里我们只显示成功消息
+                successMessage.style.display = 'block';
+
+                // 重置表单
+                setTimeout(function() {
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                    usernameInput.classList.remove('valid', 'invalid');
+                    passwordInput.classList.remove('valid', 'invalid');
+                    submitBtn.disabled = true;
+                    successMessage.style.display = 'none';
+                }, 2000);
+            });
+        });
+    </script>
 </body>
 </html>
