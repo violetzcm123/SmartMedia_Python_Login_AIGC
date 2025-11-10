@@ -67,6 +67,25 @@
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            position: relative;
+        }
+
+        /* 右上角用户信息 */
+        .user-info {
+            position: absolute;
+            top: 9px;
+            right: 30px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            color: #333;
+            z-index: 100;
+        }
+
+        .user-info strong {
+            color: #4a6cf7;
         }
 
         .card {
@@ -74,6 +93,7 @@
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
         }
 
         #result img,
@@ -84,7 +104,6 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             margin-top: 15px;
         }
-
 
         input[type="text"], input[type="file"] {
             width: 80%;
@@ -174,11 +193,15 @@
     <div class="menu-item active" onclick="showSection('text2img')">🖋 文生图</div>
     <div class="menu-item" onclick="showSection('img2img')">🧩 图生图</div>
     <div class="menu-item" onclick="loadHistory(); showSection('history')">🕓 历史记录</div>
-    <div class="menu-item" onclick="showSection('profile')">👤 个人信息</div>
     <button class="logout-btn" onclick="logout()">退出登录</button>
 </div>
 
 <div class="main">
+    <!-- 右上角用户信息 -->
+    <div class="user-info">
+        欢迎，<strong>{{ session.get('user') }}</strong>！ 👤
+    </div>
+
     <!-- 文生图 -->
     <div id="text2img" class="section active card">
         <h2>🖋 文生图 (Text to Image)</h2>
@@ -203,13 +226,6 @@
         <input type="text" id="search-input" placeholder="输入关键词搜索">
         <button onclick="searchHistory()">搜索</button>
         <div id="history-list" class="history-grid"></div>
-    </div>
-
-    <!-- 个人信息 -->
-    <div id="profile" class="section card">
-        <h2>👤 个人信息</h2>
-        <p>用户名：<strong>{{ session.get('user_id') }}</strong></p>
-        <p>欢迎使用 SmartMedia 创意工作台。</p>
     </div>
 </div>
 
@@ -243,7 +259,6 @@
         const result = document.getElementById('result-text');
         result.innerHTML = "正在生成...";
 
-
         const res = await fetch("/api/generate", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -263,7 +278,6 @@
             result.innerHTML = `<p style="color:red;">生成失败：${data.error || "未知错误"}</p>`;
         }
     }
-
 
     /* 图生图 */
     async function generateImg2Img() {
@@ -304,7 +318,6 @@
         reader.readAsDataURL(file);
     }
 
-
     /* 历史记录加载 */
     async function loadHistory() {
         const res = await fetch('/api/history');
@@ -332,8 +345,6 @@
                 `;
                 list.appendChild(div);
             });
-
-
         }
     }
 
@@ -382,7 +393,6 @@
             alert("删除失败：" + (result.error || "未知错误"));
         }
     }
-
 
     function logout() {
         if (confirm("确定要退出登录吗？")) window.location.href = "/logout";

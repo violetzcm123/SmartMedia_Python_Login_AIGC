@@ -105,6 +105,7 @@ def login():
     conn.close()
     if user:
         session['user_id'] = user['id']
+        session['user']=user['username']
         return redirect(url_for('home'))
     else:
         return render_template('login.html', error='用户名或密码错误')
@@ -122,12 +123,6 @@ def home():
         return redirect(url_for('index'))
     return render_template('index.html')
 
-
-@app.route('/history')
-def history_page():
-    if 'user_id' not in session:
-        return redirect(url_for('index'))
-    return render_template('history.html')
 
 
 # ====================================================
