@@ -156,13 +156,13 @@
                 <div class="error" id="passwordError">密码不符合要求</div>
             </div>
 
-            <button type="submit" id="submitBtn" disabled>注册</button>
-
             <div class="success-message" id="successMessage">
                 注册成功！
             </div>
-        </form>
 
+        </form>
+        <button type="submit" id="submitBtn" onclick="register()" disabled>注册</button>
+        <button  id="back" onclick="back()">返回登录</button>
         <div class="requirements">
             <h3>注册要求：</h3>
             <ul>
@@ -247,28 +247,51 @@
                 updateSubmitButton();
             });
 
-            // 表单提交事件
-            document.getElementById('registerForm').addEventListener('submit', function(e) {
-                e.preventDefault();
 
-                const username = usernameInput.value;
-                const password = passwordInput.value;
-
-                // 在实际应用中，这里应该发送数据到服务器
-                // 这里我们只显示成功消息
-                successMessage.style.display = 'block';
-
-                // 重置表单
-                setTimeout(function() {
-                    usernameInput.value = '';
-                    passwordInput.value = '';
-                    usernameInput.classList.remove('valid', 'invalid');
-                    passwordInput.classList.remove('valid', 'invalid');
-                    submitBtn.disabled = true;
-                    successMessage.style.display = 'none';
-                }, 2000);
-            });
         });
+
+         function back() {
+           window.location.href = "/logout";
+        }
+        function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // 创建表单数据
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            // 发送POST请求到注册接口
+            fetch('/register', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // 如果注册成功，跳转到登录页面
+                    window.location.href = response.url;
+                    confirm("注册成功");
+                } else {
+                    return response.text();
+                }
+            })
+            .then(html => {
+                if (html) {
+                    // 如果返回的是HTML（注册失败），显示错误信息
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const errorElement = doc.querySelector('.error');
+                    if (errorElement) {
+                        alert('注册失败: ' + errorElement.textContent);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('注册错误:', error);
+                alert('注册过程中发生错误');
+            });
+        }
     </script>
 </body>
 </html>

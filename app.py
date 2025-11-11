@@ -36,21 +36,11 @@ def init_db():
                  )''')
     c.execute('''CREATE TABLE IF NOT EXISTS images
                  (
-                     id
-                         INTEGER
-                         PRIMARY
-                             KEY
-                         AUTOINCREMENT,
-                     user_id
-                         INTEGER,
-                     prompt
-                         TEXT,
-                     url
-                         TEXT,
-                     created_time
-                         TIMESTAMP
-                         DEFAULT
-                             (datetime('now', 'localtime'))
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     user_id INTEGER,
+                     prompt TEXT,
+                     url TEXT,
+                     created_time TIMESTAMP DEFAULT (datetime('now', 'localtime'))
                  )''')
     conn.commit()
     conn.close()

@@ -192,6 +192,7 @@
     <h2>SmartMedia</h2>
     <div class="menu-item active" onclick="showSection('text2img')">🖋 文生图</div>
     <div class="menu-item" onclick="showSection('img2img')">🧩 图生图</div>
+    <div class="menu-item" onclick="showSection('img&img')">🧩 图融合</div>
     <div class="menu-item" onclick="loadHistory(); showSection('history')">🕓 历史记录</div>
     <button class="logout-btn" onclick="logout()">退出登录</button>
 </div>
@@ -220,6 +221,17 @@
         <div id="result-img"></div>
     </div>
 
+    <div id="img&img" class="section card">
+        <h2>🧩 图融合 (Image to Image)</h2>
+        <input type="text" id="prompt-2img" placeholder="请输入提示词，例如：让左边的人穿上右边的衣服">
+        <input type="file" id="image-input1" accept="image/*" onchange="previewImage()">
+        <input type="file" id="image-input2" accept="image/*" onchange="previewImage()">
+        <div id="preview1" class="preview-container"></div> <!-- 🔹预览容器 -->
+        <div id="preview2" class="preview-container"></div>
+        <button onclick="generateImg()">生成图片</button>
+        <div id="result-img1"></div>
+    </div>
+
     <!-- 历史记录 -->
     <div id="history" class="section card">
         <h2>🕓 我的生成历史</h2>
@@ -239,16 +251,38 @@
 
     /* 🔹图生图预览功能 */
     function previewImage() {
-        const file = document.getElementById('image-input').files[0];
+        const file0 = document.getElementById('image-input').files[0];
+        const file1 = document.getElementById('image-input1').files[0];
+        const file2 = document.getElementById('image-input2').files[0];
         const preview = document.getElementById('preview');
-        if (file) {
+        const preview1 = document.getElementById('preview1');
+        const preview2 = document.getElementById('preview2');
+        if (file0) {
             const reader = new FileReader();
             reader.onload = e => {
                 preview.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file0);
         } else {
             preview.innerHTML = "";
+        }
+        if (file1) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview1.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
+            };
+            reader.readAsDataURL(file1);
+        } else {
+            preview1.innerHTML = "";
+        }
+        if (file2) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview2.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
+            };
+            reader.readAsDataURL(file2);
+        } else {
+            preview2.innerHTML = "";
         }
     }
 
@@ -396,6 +430,10 @@
 
     function logout() {
         if (confirm("确定要退出登录吗？")) window.location.href = "/logout";
+    }
+
+    async function generateImg(){
+
     }
 </script>
 </body>
