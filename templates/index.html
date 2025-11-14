@@ -98,7 +98,7 @@
 
         #result img,
         #result-img img,
-        #result-multi img {
+        #result-text img {
             max-width: 300px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -184,38 +184,16 @@
             border: 2px solid #ddd;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
-
-        /* 多图融合样式 */
-        .multi-image-container {
-            display: flex;
-            gap: 20px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-
-        .image-upload-box {
-            border: 2px dashed #4a6cf7;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            min-width: 200px;
-            background: #f8f9ff;
-        }
-
-        .image-upload-box h4 {
-            margin-bottom: 10px;
-            color: #4a6cf7;
-        }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
     <h2>SmartMedia</h2>
-    <div class="menu-item active" onclick="showSection('text2img')">🖋 文生图</div>
-    <div class="menu-item" onclick="showSection('img2img')">🧩 图生图</div>
-    <div class="menu-item" onclick="showSection('multi_img')">🔄 多图融合</div>
-    <div class="menu-item" onclick="loadHistory(); showSection('history')">🕓 历史记录</div>
+    <div class="menu-item active" onclick="showSection('text2img')">文生图</div>
+    <div class="menu-item" onclick="showSection('img2img')"> 图生图</div>
+    <div class="menu-item" onclick="showSection('img&img')"> 图融合</div>
+    <div class="menu-item" onclick="loadHistory(); showSection('history')"> 历史记录</div>
     <button class="logout-btn" onclick="logout()">退出登录</button>
 </div>
 
@@ -227,7 +205,7 @@
 
     <!-- 文生图 -->
     <div id="text2img" class="section active card">
-        <h2>🖋 文生图 (Text to Image)</h2>
+        <h2> 文生图 (Text to Image)</h2>
         <input type="text" id="prompt-text" placeholder="请输入提示词，例如：森林中的独角兽">
         <button onclick="generateText2Img()">生成图片</button>
         <div id="result-text"></div>
@@ -235,7 +213,7 @@
 
     <!-- 图生图 -->
     <div id="img2img" class="section card">
-        <h2>🧩 图生图 (Image to Image)</h2>
+        <h2> 图生图 (Image to Image)</h2>
         <input type="text" id="prompt-img" placeholder="请输入提示词，例如：让女孩变为短发">
         <input type="file" id="image-input" accept="image/*" onchange="previewImage()">
         <div id="preview" class="preview-container"></div> <!-- 🔹预览容器 -->
@@ -243,31 +221,20 @@
         <div id="result-img"></div>
     </div>
 
-    <!-- 多图融合 -->
-    <div id="multi_img" class="section card">
-        <h2>🔄 多图融合 (Multi-Image Fusion)</h2>
-        <input type="text" id="prompt-multi" placeholder="请输入提示词，例如：将图1的服装换为图2的服装" style="width: 100%;">
-
-        <div class="multi-image-container">
-            <div class="image-upload-box">
-                <h4>图片 1</h4>
-                <input type="file" id="image-input1" accept="image/*" onchange="previewMultiImage(1)">
-                <div id="preview1" class="preview-container"></div>
-            </div>
-            <div class="image-upload-box">
-                <h4>图片 2</h4>
-                <input type="file" id="image-input2" accept="image/*" onchange="previewMultiImage(2)">
-                <div id="preview2" class="preview-container"></div>
-            </div>
-        </div>
-
-        <button onclick="generateMultiImg()">开始融合</button>
-        <div id="result-multi"></div>
+    <div id="img&img" class="section card">
+        <h2>图融合  (Image and Image)</h2>
+        <input type="text" id="prompt-2img" placeholder="请输入提示词，例如：让图1的人穿上图2的衣服">
+        <input type="file" id="image-input1" accept="image/*" onchange="previewImage()">
+        <input type="file" id="image-input2" accept="image/*" onchange="previewImage()">
+        <div id="preview1" class="preview-container"></div> <!-- 🔹预览容器 -->
+        <div id="preview2" class="preview-container"></div>
+        <button onclick="generateImg()">生成图片</button>
+        <div id="result-img1"></div>
     </div>
 
     <!-- 历史记录 -->
     <div id="history" class="section card">
-        <h2>🕓 我的生成历史</h2>
+        <h2> 我的生成历史</h2>
         <input type="text" id="search-input" placeholder="输入关键词搜索">
         <button onclick="searchHistory()">搜索</button>
         <div id="history-list" class="history-grid"></div>
@@ -285,7 +252,11 @@
     /* 🔹图生图预览功能 */
     function previewImage() {
         const file0 = document.getElementById('image-input').files[0];
+        const file1 = document.getElementById('image-input1').files[0];
+        const file2 = document.getElementById('image-input2').files[0];
         const preview = document.getElementById('preview');
+        const preview1 = document.getElementById('preview1');
+        const preview2 = document.getElementById('preview2');
         if (file0) {
             const reader = new FileReader();
             reader.onload = e => {
@@ -295,24 +266,27 @@
         } else {
             preview.innerHTML = "";
         }
-    }
-
-    /* 🔹多图融合预览功能 */
-    function previewMultiImage(index) {
-        const file = document.getElementById(`image-input${index}`).files[0];
-        const preview = document.getElementById(`preview${index}`);
-        if (file) {
+        if (file1) {
             const reader = new FileReader();
             reader.onload = e => {
-                preview.innerHTML = `<img src="${e.target.result}" alt="预览图${index}">`;
+                preview1.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file1);
         } else {
-            preview.innerHTML = "";
+            preview1.innerHTML = "";
+        }
+        if (file2) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview2.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
+            };
+            reader.readAsDataURL(file2);
+        } else {
+            preview2.innerHTML = "";
         }
     }
 
-    /* 文生图 */
+   /* 文生图 */
     async function generateText2Img() {
         const prompt = document.getElementById('prompt-text').value.trim();
         if (!prompt) return alert("请输入提示词！");
@@ -332,7 +306,11 @@
             await fetch("/api/save", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({prompt, url: data.url, type: "text2img"})
+                body: JSON.stringify({
+                    prompt: data.prompt || prompt,
+                    url: data.url,
+                    type: data.type || "text2img"
+                })
             });
         } else {
             result.innerHTML = `<p style="color:red;">生成失败：${data.error || "未知错误"}</p>`;
@@ -365,10 +343,10 @@
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
-                        prompt,
+                        prompt: data.prompt || prompt,
                         url: data.url,
-                        type: "img2img",
-                        source_image: imageBase64
+                        type: data.type || "img2img",
+                        source_image1: imageBase64  // 使用正确的字段名
                     })
                 });
             } else {
@@ -376,69 +354,6 @@
             }
         };
         reader.readAsDataURL(file);
-    }
-
-    /* 多图融合 */
-    async function generateMultiImg() {
-        const prompt = document.getElementById('prompt-multi').value.trim();
-        const file1 = document.getElementById('image-input1').files[0];
-        const file2 = document.getElementById('image-input2').files[0];
-
-        if (!prompt) return alert("请输入提示词！");
-        if (!file1 || !file2) return alert("请选择两张图片！");
-
-        const result = document.getElementById('result-multi');
-        result.innerHTML = "正在融合图片...";
-
-        // 读取两张图片为Base64
-        const readFileAsBase64 = (file) => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-        };
-
-        try {
-            const [image1, image2] = await Promise.all([
-                readFileAsBase64(file1),
-                readFileAsBase64(file2)
-            ]);
-
-            const res = await fetch("/api/generate_multi", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    prompt,
-                    images: [image1, image2]
-                })
-            });
-
-            const data = await res.json();
-            if (data.url) {
-                result.innerHTML = `
-                    <div style="text-align: center;">
-                        <h3>融合结果</h3>
-                        <img src="${data.url}">
-                        <p><a href="${data.url}" target="_blank">查看原图</a></p>
-                    </div>
-                `;
-                // 生成成功后保存数据库记录
-                await fetch("/api/save", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        prompt,
-                        url: data.url,
-                        type: "multi_img"
-                    })
-                });
-            } else {
-                result.innerHTML = `<p style="color:red;">融合失败：${data.error || "未知错误"}</p>`;
-            }
-        } catch (error) {
-            result.innerHTML = `<p style="color:red;">处理失败：${error.message}</p>`;
-        }
     }
 
     /* 历史记录加载 */
@@ -455,56 +370,37 @@
                 const div = document.createElement('div');
                 div.className = "history-item";
 
-                let typeText = '文生图 🖋';
-                if (r.type === 'img2img') typeText = '图生图 🧩';
-                if (r.type === 'multi_img') typeText = '多图融合 🔄';
+                let sourceImagesHtml = '';
+
+                // 图融合：显示两张原图（source_image1 和 source_image2）
+                if (r.type === 'img_fusion' && r.source_image1 && r.source_image2) {
+                    sourceImagesHtml = `
+                        <div style="margin-top:8px;">
+                            <p style="font-size:12px;color:#888;">原图预览：</p>
+                            <div style="display: flex; gap: 5px; justify-content: center;">
+                                <img src="${r.source_image1}" style="max-width:80px;border-radius:6px;border:1px solid #ccc;">
+                                <img src="${r.source_image2}" style="max-width:80px;border-radius:6px;border:1px solid #ccc;">
+                            </div>
+                        </div>
+                    `;
+                }
+                // 图生图：显示单张原图（source_image1）
+                else if (r.type === 'img2img' && r.source_image1) {
+                    sourceImagesHtml = `
+                        <div style="margin-top:8px;">
+                            <p style="font-size:12px;color:#888;">原图预览：</p>
+                            <img src="${r.source_image1}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;">
+                        </div>
+                    `;
+                }
 
                 div.innerHTML = `
                     <img src="${r.url}" alt="生成图片">
                     <p>${r.prompt}</p>
                     <p style="font-size:12px;color:gray;">
-                        类型：${typeText}
+                        类型：${r.type === 'img2img' ? '图生图' : r.type === 'img_fusion' ? '图融合' : '文生图'}
                     </p>
-                    ${r.type === 'img2img' && r.source_image
-                    ? `<div style="margin-top:8px;"><p style="font-size:12px;color:#888;">原图预览：</p>
-                           <img src="${r.source_image}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;"></div>`
-                    : ''}
-                    <button class="delete-btn" onclick="deleteHistory(${r.id})">🗑 删除</button>
-                `;
-                list.appendChild(div);
-            });
-        }
-    }
-
-    /* 历史搜索 */
-    async function searchHistory() {
-        const q = document.getElementById('search-input').value.trim();
-        const res = await fetch(`/api/history?q=${encodeURIComponent(q)}`);
-        const list = document.getElementById('history-list');
-        list.innerHTML = '';
-        const data = await res.json();
-
-        if (data.length === 0) {
-            list.innerHTML = "<p>未找到相关记录</p>";
-        } else {
-            data.forEach(r => {
-                const div = document.createElement('div');
-                div.className = "history-item";
-
-                let typeText = '文生图 🖋';
-                if (r.type === 'img2img') typeText = '图生图 🧩';
-                if (r.type === 'multi_img') typeText = '多图融合 🔄';
-
-                div.innerHTML = `
-                    <img src="${r.url}" alt="生成图片">
-                    <p>${r.prompt}</p>
-                    <p style="font-size:12px;color:gray;">
-                        类型：${typeText}
-                    </p>
-                    ${r.type === 'img2img' && r.source_image
-                    ? `<div style="margin-top:8px;"><p style="font-size:12px;color:#888;">原图预览：</p>
-                           <img src="${r.source_image}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;"></div>`
-                    : ''}
+                    ${sourceImagesHtml}
                     <button class="delete-btn" onclick="deleteHistory(${r.id})">🗑 删除</button>
                 `;
                 list.appendChild(div);
@@ -527,8 +423,120 @@
         }
     }
 
+     /* 历史搜索 */
+    async function searchHistory() {
+        const q = document.getElementById('search-input').value.trim();
+        const res = await fetch(`/api/history?q=${encodeURIComponent(q)}`);
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        const data = await res.json();
+
+        if (data.length === 0) {
+            list.innerHTML = "<p>未找到相关记录</p>";
+        } else {
+            data.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "history-item";
+
+                let sourceImagesHtml = '';
+
+                // 图融合：显示两张原图（source_image1 和 source_image2）
+                if (r.type === 'img_fusion' && r.source_image1 && r.source_image2) {
+                    sourceImagesHtml = `
+                        <div style="margin-top:8px;">
+                            <p style="font-size:12px;color:#888;">原图预览：</p>
+                            <div style="display: flex; gap: 5px; justify-content: center;">
+                                <img src="${r.source_image1}" style="max-width:80px;border-radius:6px;border:1px solid #ccc;">
+                                <img src="${r.source_image2}" style="max-width:80px;border-radius:6px;border:1px solid #ccc;">
+                            </div>
+                        </div>
+                    `;
+                }
+                // 图生图：显示单张原图（source_image1）
+                else if (r.type === 'img2img' && r.source_image1) {
+                    sourceImagesHtml = `
+                        <div style="margin-top:8px;">
+                            <p style="font-size:12px;color:#888;">原图预览：</p>
+                            <img src="${r.source_image1}" style="max-width:100px;border-radius:6px;border:1px solid #ccc;">
+                        </div>
+                    `;
+                }
+
+                div.innerHTML = `
+                    <img src="${r.url}" alt="生成图片">
+                    <p>${r.prompt}</p>
+                    <p style="font-size:12px;color:gray;">
+                        类型：${r.type === 'img2img' ? '图生图' : r.type === 'img_fusion' ? '图融合' : '文生图'}
+                    </p>
+                    ${sourceImagesHtml}
+                    <button class="delete-btn" onclick="deleteHistory(${r.id})">🗑 删除</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+    }
+
     function logout() {
         if (confirm("确定要退出登录吗？")) window.location.href = "/logout";
+    }
+
+    /* 图融合 */
+    async function generateImg() {
+        const prompt = document.getElementById('prompt-2img').value.trim();
+        const file1 = document.getElementById('image-input1').files[0];
+        const file2 = document.getElementById('image-input2').files[0];
+
+        if (!prompt || !file1 || !file2) {
+            return alert("请输入提示词并选择两张图片！");
+        }
+
+        const result = document.getElementById('result-img1');
+        result.innerHTML = "正在生成...";
+
+        // 读取两张图片为Base64
+        const readFileAsBase64 = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        };
+
+        try {
+            const image1 = await readFileAsBase64(file1);
+            const image2 = await readFileAsBase64(file2);
+
+            const res = await fetch("/api/generate", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    prompt: prompt,
+                    images: [image1, image2]  // 传递多张图片
+                })
+            });
+
+            const data = await res.json();
+            if (data.url) {
+                result.innerHTML = `<img src="${data.url}"><p><a href="${data.url}" target="_blank">查看原图</a></p>`;
+
+                // 保存图融合记录
+                await fetch("/api/save", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        prompt: data.prompt || prompt,
+                        url: data.url,
+                        type: data.type || "img_fusion",
+                        source_image1: image1,  // 第一张原图
+                        source_image2: image2   // 第二张原图
+                    })
+                });
+            } else {
+                result.innerHTML = `<p style="color:red;">生成失败：${data.error || "未知错误"}</p>`;
+            }
+        } catch (error) {
+            result.innerHTML = `<p style="color:red;">处理失败：${error.message}</p>`;
+        }
     }
 </script>
 </body>
